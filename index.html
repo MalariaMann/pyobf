@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Obfuscator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Python Obfuscator</h1>
+        <p>Select a Python file to obfuscate:</p>
+        <input type="file" id="fileInput" accept=".py">
+        <button onclick="obfuscate()">Obfuscate</button>
+
+        <pre id="output" class="output"></pre>
+
+        <a id="downloadLink" style="display:none;" class="download">Download Obfuscated File</a>
+    </div>
+
+    <script>
+        let pyodideReady = false;
+        let pyodide;
+
+        async function loadPy() {
+            pyodide = await loadPyodide();
+            pyodideReady = true;
+            await pyodide.runPythonAsync(`
+def obfuscate_code(code):
+    # Simple obfuscation: reverse lines and add comments
+    return "\\n".join("# " + line[::-1] if line.strip() else line for line in code.splitlines())
+`);
+        }
+
+        loadPy();
+
+        async function obfuscate() {
+            if (!pyodideReady) return alert("Python engine is still loading, wait a moment!");
+            const fileInput = document.getElementById("fileInput");
+            if (!fileInput.files.length) return alert("Please select a Python file first!");
+
+            const file = fileInput.files[0];
+            const code = await file.text();
+
+            const obf_code = pyodide.globals.get("obfuscate_code")(code);
+
+            // Display obfuscated code
+            document.getElementById("output").textContent = obf_code;
+
+            // Prepare download link
+            const blob = new Blob([obf_code], { type: "text/python" });
+            const url = URL.createObjectURL(blob);
+            const a = document.getElementById("downloadLink");
+            a.href = url;
+            a.download = file.name.replace(".py","-obf.py");
+            a.style.display = "inline-block";
+            a.textContent = "Download Obfuscated File";
+        }
+    </script>
+</body>
+</html>
